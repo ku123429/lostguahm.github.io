@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>분실물 게시판</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #top-bar { display: flex; justify-content: space-between; align-items: center; }
+    #left-menu { display: flex; align-items: center; gap: 10px; }
+    #left-menu img { height: 40px; }
+    #left-menu button, #admin-btn { padding: 5px 10px; }
+    #admin-btn { font-size: 12px; }
+    #content > div { display: none; margin-top: 20px; }
+    .item { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; position: relative; }
+    .item img { max-width: 100px; margin-top: 5px; }
+    .delete-btn { position: absolute; top: 5px; right: 5px; display: none; }
+    .admin-mode .delete-btn { display: block; }
+    label { display: block; margin-top: 10px; }
+    input[type="text"], input[type="date"] { width: 100%; padding: 5px; }
+  </style>
+</head>
+<body>
+
+<div id="top-bar">
+  <div id="left-menu">
+    <img src="https://via.placeholder.com/40" alt="로고" id="logo">
+    <button onclick="showPage('list')">분실품 보기</button>
+    <button onclick="showPage('register')">분실품 등록</button>
+    <button onclick="showPage('search')">내물건찾기</button>
+  </div>
+  <button id="admin-btn" onclick="enterAdmin()">관리자</button>
+</div>
+
+<div id="content">
+  <!-- 목록 -->
+  <div id="list">
+    <h2>분실물 목록</h2>
+    <div id="itemList"></div>
+  </div>
+
+  <!-- 등록 -->
+  <div id="register">
+    <h2>분실물 등록</h2>
+    <label>제목 <input type="text" id="title"></label>
+    <label>키워드 <input type="text" id="keyword"></label>
+    <label>사진 업로드 <input type="file" id="photoInput" accept="image/*"></label>
+    <label>글쓴이 <input type="text" id="author"></label>
+    <label>표시일 <input type="date" id="date"></label>
+    <br>
+    <button onclick="cancelRegister()">취소</button>
+    <button onclick="submitRegister()">등록</button>
+  </div>
+
+  <!-- 검색 -->
+  <div id="search">
+    <h2>내 물건 찾기</h2>
+    <input type="text" id="searchInput" placeholder="검색어 입력">
+    <button onclick="searchItems()">검색</button>
+    <div id="searchResult"></div>
+  </div>
+</div>
+
+<script>
+  const ADMIN_PASSWORD = "22846759284";  // 여기에 관리자 비밀번호 설정
+  const items = [];
+  let isAdmin = false;
+
+  function showPage(page) {
+    document.querySelectorAll('#content > div').forEach(div => div.style.display = 'none');
+    document.getElementById(page).style.display = 'block';
+    if (page === 'list') renderList();
+  }
+
+  function cancelRegister() {
+    document.getElementById('title').value = '';
+    document.getElementById('keyword').value = '';
+    document.getElementById('photoInput').value = '';
+    document.getElementById('author').value = '';
+    document.getElementById('date').value = '';
+    showPage('list');
+  }
+
+  function submitRegister() {
+    const file = document.getElementById('photoInput').files[0];
+    if (!file) return alert("사진을 선택해주세요.");
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const item = {
+        title: document.getElementById('title').value,
+        keyword: document.getElementById('keyword').value,
+        photo: e.target.result,
+        author: document.getElementById('author').value,
+        date: document.getElementById('date').value
+      };
+      items.push(item);
+      cancelRegister();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function renderList() {
+    const container = document.getElementById('itemList');
+    container.innerHTML = '';
+    if (items.length === 0) {
+      container.innerHTML = '<p>등록된 분실물이 없습니다.</p>';
+      return;
+    }
+
+    items.forEach((item, index) => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      if (isAdmin) div.classList.add('admin-mode');
+      div.innerHTML = `
+        <strong>${item.title}</strong> (${item.date})<br>
+        키워드: ${item.keyword}<br>
+        작성자: ${item.author}<br>
+        <img src="${item.photo}" alt="사진"><br>
+        <button class="delete-btn" onclick="deleteItem(${index})">삭제</button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function searchItems() {
+    const keyword = document.getElementById('searchInput').value.toLowerCase();
+    const resultDiv = document.getElementById('searchResult');
+    resultDiv.innerHTML = '';
+
+    const results = items.filter(item =>
+      item.title.toLowerCase().includes(keyword) ||
+      item.keyword.toLowerCase().includes(keyword) ||
+      item.author.toLowerCase().includes(keyword)
+    );
+
+    if (results.length === 0) {
+      resultDiv.innerHTML = '<p>검색 결과가 없습니다.</p>';
+      return;
+    }
+
+    results.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `
+        <strong>${item.title}</strong> (${item.date})<br>
+        키워드: ${item.keyword}<br>
+        작성자: ${item.author}<br>
+        <img src="${item.photo}" alt="사진">
+      `;
+      resultDiv.appendChild(div);
+    });
+  }
+
+  function enterAdmin() {
+    const pw = prompt("관리자 비밀번호를 입력하세요:");
+    if (pw === ADMIN_PASSWORD) {
+      alert("관리자 모드가 활성화되었습니다.");
+      isAdmin = true;
+      renderList();
+    } else {
+      alert("비밀번호가 틀렸습니다.");
+    }
+  }
+
+  function deleteItem(index) {
+    if (!isAdmin) return;
+    if (confirm("정말 삭제하시겠습니까?")) {
+      items.splice(index, 1);
+      renderList();
+    }
+  }
+
+  // 페이지 시작 시 자동으로 분실품 보기
+  showPage('list');
+</script>
+
+</body>
+</html>
