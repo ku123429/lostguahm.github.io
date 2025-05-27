@@ -4,19 +4,76 @@
   <meta charset="UTF-8">
   <title>분실물 게시판</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #top-bar { display: flex; justify-content: space-between; align-items: center; }
-    #left-menu { display: flex; align-items: center; gap: 10px; }
-    #left-menu img { height: 40px; }
-    #left-menu button, #admin-btn { padding: 5px 10px; }
-    #admin-btn { font-size: 12px; }
-    #content > div { display: none; margin-top: 20px; }
-    .item { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; position: relative; }
-    .item img { max-width: 100px; margin-top: 5px; }
-    .delete-btn { position: absolute; top: 5px; right: 5px; display: none; }
-    .admin-mode .delete-btn { display: block; }
-    label { display: block; margin-top: 10px; }
-    input[type="text"], input[type="date"] { width: 100%; padding: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      font-size: 16px;
+    }
+    #top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #left-menu {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #left-menu img {
+      height: 40px;
+    }
+    #left-menu button, #admin-btn {
+      padding: 5px 10px;
+    }
+    #admin-controls {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    #admin-btn {
+      font-size: 12px;
+    }
+    #content > div {
+      display: none;
+      margin-top: 20px;
+    }
+    .item {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .item img {
+      max-width: 100px;
+      margin-top: 5px;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      display: none;
+    }
+    .admin-mode .delete-btn {
+      display: block;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 5px;
+    }
+    #bug-report {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background-color: #eee;
+      border: 1px solid #ccc;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -27,8 +84,13 @@
     <button onclick="showPage('list')">분실품 보기</button>
     <button onclick="showPage('register')">분실품 등록</button>
     <button onclick="showPage('search')">내물건찾기</button>
+    <button onclick="reportMalicious()">악성 게시물 신고</button>
   </div>
-  <button id="admin-btn" onclick="enterAdmin()">관리자</button>
+  <div id="admin-controls">
+    <button onclick="adjustFontSize(1)">글자 +</button>
+    <button onclick="adjustFontSize(-1)">글자 -</button>
+    <button id="admin-btn" onclick="enterAdmin()">관리자</button>
+  </div>
 </div>
 
 <div id="content">
@@ -60,8 +122,11 @@
   </div>
 </div>
 
+<!-- 버그 신고 버튼 (하단 고정) -->
+<a href="mailto:admin@example.com?subject=분실물 사이트 버그신고" id="bug-report">버그 신고</a>
+
 <script>
-  const ADMIN_PASSWORD = "22846759284";  // 여기에 관리자 비밀번호 설정
+  const ADMIN_PASSWORD = "1234";
   const items = [];
   let isAdmin = false;
 
@@ -72,18 +137,17 @@
   }
 
   function cancelRegister() {
-    document.getElementById('title').value = '';
-    document.getElementById('keyword').value = '';
-    document.getElementById('photoInput').value = '';
-    document.getElementById('author').value = '';
-    document.getElementById('date').value = '';
+    ['title', 'keyword', 'photoInput', 'author', 'date'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el.type === 'file') el.value = '';
+      else el.value = '';
+    });
     showPage('list');
   }
 
   function submitRegister() {
     const file = document.getElementById('photoInput').files[0];
     if (!file) return alert("사진을 선택해주세요.");
-
     const reader = new FileReader();
     reader.onload = function (e) {
       const item = {
@@ -126,13 +190,11 @@
     const keyword = document.getElementById('searchInput').value.toLowerCase();
     const resultDiv = document.getElementById('searchResult');
     resultDiv.innerHTML = '';
-
     const results = items.filter(item =>
       item.title.toLowerCase().includes(keyword) ||
       item.keyword.toLowerCase().includes(keyword) ||
       item.author.toLowerCase().includes(keyword)
     );
-
     if (results.length === 0) {
       resultDiv.innerHTML = '<p>검색 결과가 없습니다.</p>';
       return;
@@ -168,6 +230,17 @@
       items.splice(index, 1);
       renderList();
     }
+  }
+
+  function adjustFontSize(delta) {
+    const body = document.body;
+    const currentSize = parseFloat(window.getComputedStyle(body).fontSize);
+    const newSize = currentSize + delta;
+    body.style.fontSize = newSize + "px";
+  }
+
+  function reportMalicious() {
+    window.location.href = "jaeubag801@gmail.com?subject=분실물 사이트 버그신고";
   }
 
   // 페이지 시작 시 자동으로 분실품 보기
